@@ -1,18 +1,57 @@
+require 'pry'
 class Student
   attr_accessor :id, :name, :grade
 
   def self.new_from_db(row)
     # create a new Student object given a row from the database
+    student = self.new
+    student.id = row[0]
+    student.name = row[1]
+    student.grade =row[2]
+    student
   end
 
   def self.all
     # retrieve all the rows from the "Students" database
     # remember each row should be a new instance of the Student class
+    students = DB[:conn].execute("SELECT * FROM students;")
+    students.collect do |student|
+      Student.new_from_db(student)
+    end
   end
 
   def self.find_by_name(name)
     # find the student in the database given a name
     # return a new instance of the Student class
+    sql = <<-SQL
+    SELECT * FROM students
+    WHERE students.name = ?
+    SQL
+
+    student = DB[:conn].execute(sql, name)
+    self.new_from_db(student[0])
+
+  end
+
+  def self.all_students_in_grade_9
+    self.all.select {|student| student.grade == "9"}
+  end
+
+  def self.students_below_12th_grade
+    self.all.select {|student| student.grade != "12"}
+  end
+
+  def self.first_X_students_in_grade_10(x)
+    students = self.all.select {|student| student.grade == "10"}
+    students.first(x)
+  end
+
+  def self.first_student_in_grade_10
+    self.all.find {|student| student.grade == "10"}
+  end
+
+  def self.all_students_in_grade_X(x)
+    self.all.select {|student| student.grade == x.to_s}
   end
   
   def save
